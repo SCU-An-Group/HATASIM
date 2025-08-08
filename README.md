@@ -6,4 +6,4 @@ This code was originally developed to predicting the ascent of high-altitude tet
 
 If you use or edit our work, please cite the appropriate reference:
 
-Ni, Z., Zhu, S., An, N.*, Predicting the ascent of high-altitude tethered spherical balloons. Under Preparation.
+Ni, Z., Zhu, S., Song, J., Dou, S., An, N.*, Predicting the ascent of high-altitude tethered spherical balloons. Under Preparation.
