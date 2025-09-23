@@ -12,7 +12,7 @@ classdef HATASIM_Tool_EN < matlab.apps.AppBase
         CableParamsPanel       matlab.ui.container.Panel
         PrecisionParamsPanel   matlab.ui.container.Panel
         WindParamsPanel        matlab.ui.container.Panel
-        DiagramAxes            matlab.ui.control.UIAxes
+        DiagramImage           matlab.ui.control.Image
         
         % Result display UI controls
         PathAxes         matlab.ui.control.UIAxes
@@ -23,7 +23,8 @@ classdef HATASIM_Tool_EN < matlab.apps.AppBase
         QueryResultTextArea    matlab.ui.control.TextArea
         
         % Common controls
-        SolveButton            matlab.ui.control.Button
+        CalculateButton        matlab.ui.control.Button  
+        ResetButton            matlab.ui.control.Button  
         ParamNavButton         matlab.ui.control.Button
         ResultNavButton        matlab.ui.control.Button
         QueryLabel             matlab.ui.control.Label
@@ -88,7 +89,7 @@ classdef HATASIM_Tool_EN < matlab.apps.AppBase
                 - ( (P0*((T0 - gamma*(h - h_ground))/T0).^(g/(R_air*gamma)))/(R_He*(T0 - gamma*(h - h_ground))) * (1/6)*pi*D_balloon^3 ...
                 + m_env + m_load + rho_cable*(pi/4)*d_cable^2*(h - h_ground - D_balloon/2) ) * g;
             
-            options = optimset('TolX', 1e-3, 'Display', 'off');
+            options = optimset('TolX', 1e-6, 'Display', 'off');
             max_L_no_wind = fzero(fun, [h_ground + D_balloon/2, 10000], options);
             app.MaxLOriginal = max_L_no_wind;
             
@@ -410,10 +411,6 @@ classdef HATASIM_Tool_EN < matlab.apps.AppBase
                 end
             end
             app.QueryLines = {};
-            
-            % Reset button state
-            app.SolveButton.Text = 'Calculate';
-            app.SolveButton.BackgroundColor = [1 0.6 0.2]; % Orange
         end
         
         % Set parameter editability
@@ -503,7 +500,7 @@ classdef HATASIM_Tool_EN < matlab.apps.AppBase
             app.BottomPanel.Position = [1, 1, 1200, 40];
             
             % Footer text
-            uilabel(app.BottomPanel, 'Text', 'Supported by An-Group    /    Author: Zhongwei Ni    /    Version: 1.1', ...
+            uilabel(app.BottomPanel, 'Text', 'Version: 1.1', ...
                 'Position', [200, 2, 800, 36], ...
                 'FontSize', 18, 'FontColor', [1 1 1], ...
                 'HorizontalAlignment', 'center');
@@ -609,36 +606,52 @@ classdef HATASIM_Tool_EN < matlab.apps.AppBase
             app.alphaEdit = uieditfield(app.WindParamsPanel, 'numeric', ...
                 'Value', 0.2, 'Position', [176, 60, 100, 28], 'FontSize', 14);
             
-            % Diagram area
-            app.DiagramAxes = uiaxes(app.ParamPanel);
-            title(app.DiagramAxes, 'System Diagram', 'FontSize', 18, 'FontWeight', 'bold');
-            app.DiagramAxes.Position = [784, 180, 360, 500];
+            % ========== Diagram Image ==========
+            % label
+            diagramTitleLabel = uilabel(app.ParamPanel);
+            diagramTitleLabel.Text = 'System Diagram';
+            diagramTitleLabel.FontSize = 18;
+            diagramTitleLabel.FontWeight = 'bold';
+            diagramTitleLabel.HorizontalAlignment = 'center';
+            diagramTitleLabel.Position = [784, 620, 360, 30];
+
+            app.DiagramImage = uiimage(app.ParamPanel);
+            app.DiagramImage.Position = [784, 180, 360, 500];
             
-            % Draw diagram
-            plot(app.DiagramAxes, [-10, 8, 23, 35, 44, 50], [0, 9, 22.5, 40.5, 63, 90], 'k-', 'LineWidth', 2); % Tether
-            hold(app.DiagramAxes, 'on');
-            rectangle(app.DiagramAxes, 'Position', [43.75 83.75 12.5 12.5], 'Curvature', [1 1], 'FaceColor', [0.8 0.9 1]); % Balloon
-            plot(app.DiagramAxes, [-10 60], [0 0], 'k-', 'LineWidth', 4); % Ground
-            text(app.DiagramAxes, 30, 90, 'Balloon', 'FontSize', 14);
-            text(app.DiagramAxes, 8, 22.5, 'Tether', 'FontSize', 14);
-            text(app.DiagramAxes, 44.75, 5, 'Ground', 'FontSize', 14);
-            text(app.DiagramAxes, 21, 60, 'V_{ref}', 'FontSize', 14);
-            quiver(app.DiagramAxes, 20, 55, 10, 0, 'LineWidth', 2, 'Color', 'b', 'MaxHeadSize', 1);
-            hold(app.DiagramAxes, 'off');
-            axis(app.DiagramAxes, 'equal');
-            app.DiagramAxes.XLim = [-20 70];
-            app.DiagramAxes.YLim = [-10 105];
-            app.DiagramAxes.XTick = [];
-            app.DiagramAxes.YTick = [];
-            app.DiagramAxes.Box = 'on';
+            try
+                % Figure1.jpg
+                if exist('Figure1.jpg', 'file')
+                    app.DiagramImage.ImageSource = 'Figure1.jpg';
+                elseif exist('Figure1.png', 'file')
+                    app.DiagramImage.ImageSource = 'Figure1.png';
+                else
+                    % if error
+                    uilabel(app.ParamPanel, 'Text', 'System Diagram Image\n(Figure1.jpg/png)', ...
+                        'Position', [784, 380, 360, 100], 'FontSize', 16, ...
+                        'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle');
+                end
+            catch
+                % error
+                uilabel(app.ParamPanel, 'Text', 'Failed to load diagram image', ...
+                    'Position', [784, 380, 360, 100], 'FontSize', 16, ...
+                    'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle');
+            end
             
-            % Solve button
-            app.SolveButton = uibutton(app.ParamPanel, 'push', ...
+            % Calculate button
+            app.CalculateButton = uibutton(app.ParamPanel, 'push', ...
                 'Text', 'Calculate', ...
-                'Position', [876, 80, 180, 64], ...
+                'Position', [792, 80, 160, 64], ...
                 'FontSize', 28, 'FontWeight', 'bold', ...
                 'BackgroundColor', [0.6 0.8 1], ...  % Blue
-                'ButtonPushedFcn', createCallbackFcn(app, @SolveButtonPushed, true));
+                'ButtonPushedFcn', createCallbackFcn(app, @CalculateButtonPushed, true));
+            
+            % Reset button
+            app.ResetButton = uibutton(app.ParamPanel, 'push', ...
+                'Text', 'Reset', ...
+                'Position', [972, 80, 160, 64], ...
+                'FontSize', 28, 'FontWeight', 'bold', ...
+                'BackgroundColor', [1 0.65 0], ...  % orange
+                'ButtonPushedFcn', createCallbackFcn(app, @ResetButtonPushed, true));
             
             % ========== Results Panel ==========
             app.ResultPanel = uipanel(app.UIFigure);
@@ -697,21 +710,17 @@ classdef HATASIM_Tool_EN < matlab.apps.AppBase
             app.switchToResultPanel();
         end
         
-        function SolveButtonPushed(app, ~)
-            if strcmp(app.SolveButton.Text, 'Calculate')
-                % Disable parameter editing
-                app.setParametersEditable(false);
-                
-                % Start calculation
-                app.calculate();
-                
-                % Change button to reset
-                app.SolveButton.Text = 'RESET';
-                app.SolveButton.BackgroundColor = [1 0.65 0]; % Orange
-            else
-                % Reset parameters
-                app.resetParameters();
-            end
+        function CalculateButtonPushed(app, ~)
+            % Disable parameter editing
+            app.setParametersEditable(false);
+            
+            % Start calculation
+            app.calculate();
+        end
+        
+        function ResetButtonPushed(app, ~)
+            % Reset parameters
+            app.resetParameters();
         end
         
         function QueryButtonPushed(app, ~)
