@@ -481,7 +481,7 @@
             let D_t = 0;
             if (Math.abs(v_t) > 0.001) {
                 const Re_t = rho_air_seg * Math.abs(v_t) * d_def / mu_seg;
-                const Cd_t = (Re_t < 150000) ? 1.88 / Math.pow(Re_t, 0.74) : 0.062;
+                const Cd_t = (Re_t < 100.55) ? 1.88 / Math.pow(Re_t, 0.74) : 0.062;
                 D_t = 0.5 * rho_air_seg * v_t * v_t * L_def * d_def * Cd_t;
             }
             const F_horiz = F_seg * Math.sin(theta_seg) + D_n * Math.cos(theta_seg) + D_t * Math.sin(theta_seg);
